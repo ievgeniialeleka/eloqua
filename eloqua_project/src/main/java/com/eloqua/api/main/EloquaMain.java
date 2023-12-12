@@ -12,46 +12,46 @@ import java.util.Map;
 public class EloquaMain {
     public static void main(String @NotNull [] args) {
 
-//        final String companyName = args[0];
-//        final URI loginUri = URI.create(args[1]);
-//        final String userName = args[2];
-//        final String pwd = args[3];
-//
-//        Map<String,String> updateMap = new HashMap<>();
-//        updateMap.put("emailAddress","jps+12@gmail.com");
-//        updateMap.put("id","6153465");
-//        updateMap.put("businessPhone","555-555-5555");
-//
-//        Map<String,String> createMap = new HashMap<>();
-//        createMap.put("emailAddress","testingemail13@gmail.com");
-//
-//        Authorization authorization = new Authorization(companyName, loginUri, userName, pwd);
-//
-//        boolean isAuthorized = authorization.authorize();
-//
-//        if(isAuthorized) {
-//            ContactsApi contactsApi = new ContactsApi(authorization.getBaseUrl(), authorization.getAuthToken());
-//            List<Contact> contactsListWithLimit = contactsApi.getEloquaContacts(5);
-//            for (Contact c : contactsListWithLimit) {
-//                System.out.println(c);
-//            }
-//            System.out.println();
-//
-//            Contact singleContact = contactsApi.getSingleContact("6153465");
-//            System.out.println(singleContact);
-//            System.out.println();
-//
-//            List<Contact> contactsListWithFilters = contactsApi.getEloquaContacts("id", "=", "6153467");
-//            for (Contact c : contactsListWithFilters) {
-//                System.out.println(c);
-//            }
-//            System.out.println();
-//
-//            System.out.println(contactsApi.createEloquaContact(createMap));
-//            System.out.println();
-//
-//            Contact updatedContact = contactsApi.updateEloquaContact(updateMap,"6153465");
-//            System.out.println(updatedContact);
-//        }
+        final String companyName = args[0];
+        final URI loginUri = URI.create(args[1]);
+        final String userName = args[2];
+        final String pwd = args[3];
+
+        Map<String,String> updateMap = new HashMap<>();
+        updateMap.put("emailAddress","jps+12@gmail.com");
+        updateMap.put("id","6153465");
+        updateMap.put("businessPhone","555-555-5555");
+
+        Map<String,String> createMap = new HashMap<>();
+        createMap.put("emailAddress","testingemail13@gmail.com");
+
+        Authorization authorization = new Authorization(companyName, loginUri, userName, pwd);
+
+        boolean isAuthorized = authorization.authorize();
+
+        if(isAuthorized) {
+            ContactsApi contactsApi = new ContactsApi(authorization.getBaseUrl(), authorization.getAuthToken());
+            List<Contact> contactsListWithLimit = contactsApi.getEloquaContacts(5);
+            for (Contact c : contactsListWithLimit) {
+                System.out.println(c);
+            }
+            System.out.println();
+
+            Contact singleContact = contactsApi.getSingleContact("6153465");
+            System.out.println(singleContact);
+            System.out.println();
+
+            List<Contact> contactsListWithFilters = contactsApi.getEloquaContacts("id", "=", "6153467");
+            for (Contact c : contactsListWithFilters) {
+                System.out.println(c);
+            }
+            System.out.println();
+
+            System.out.println(contactsApi.createEloquaContact(createMap));
+            System.out.println();
+
+            Contact updatedContact = contactsApi.updateEloquaContact(updateMap,"6153465");
+            System.out.println(updatedContact);
+        }
     }
 }
