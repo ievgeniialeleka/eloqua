@@ -1,10 +1,13 @@
 package com.eloqua.api.requests;
 
 import com.eloqua.api.entity.Contact;
-import org.junit.jupiter.api.BeforeAll;
-import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.AfterAll;
 import com.eloqua.api.utils.Authorization;
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.exc.MismatchedInputException;
+import org.json.JSONException;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.CsvSource;
 import org.junit.jupiter.params.provider.ValueSource;
@@ -14,10 +17,10 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-import static org.junit.jupiter.api.Assertions.assertAll;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 
 public class ContactsApiTest {
 
@@ -26,13 +29,13 @@ public class ContactsApiTest {
     private static final String USER_NAME = System.getenv("USER");
     private static final String PASSWORD = System.getenv("PWD");
 
-    private static Authorization authorization;
-    private static ContactsApi contacts;
-    private static String id;
-    private static Map<String,String> requestBody;
+    private Authorization authorization;
+    private ContactsApi contacts;
+    private String id;
+    private Map<String, String> requestBody;
 
-    @BeforeAll
-    static void init() {
+    @BeforeEach
+    void init() throws JSONException {
         authorization = new Authorization(COMPANY_NAME, LOGIN_URI, USER_NAME, PASSWORD);
         authorization.authorize();
         String baseUriString = authorization.getBaseUrl();
@@ -43,35 +46,37 @@ public class ContactsApiTest {
     }
 
     @Test
-    void testGetEloquaContactWithoutParameters() {
+    void testGetEloquaContactWithoutParameters() throws JsonProcessingException {
         List<Contact> contactsList = contacts.getEloquaContacts();
-        assertAll(
-                () -> assertNotNull(contactsList),
-                () -> assertTrue(contactsList.stream()
-                        .map(Contact::getType)
-                        .allMatch(t -> t.equals("Contact"))),
+        assertNotNull(contactsList);
+        assertTrue(contactsList.stream()
+                .map(Contact::getType)
+                .allMatch(t -> t.equals("Contact")));
 
-                () -> assertTrue(contactsList.stream()
-                        .map(Contact::getName)
-                        .allMatch(n -> n.contains("@")))
-        );
+        assertTrue(contactsList.stream()
+                .map(Contact::getName)
+                .allMatch(n -> n.contains("@")));
     }
 
     @ParameterizedTest
-    @ValueSource(ints = {5, 10, 15})
-    void testGetEloquaContactMaxNumbersOfEntries(int number) {
+    @ValueSource(ints = {1, 100, 1000})
+    void testGetEloquaContactMaxNumbersOfEntries(int number) throws JsonProcessingException {
         List<Contact> contactsList = contacts.getEloquaContacts(number);
-        assertAll(
-                () -> assertNotNull(contactsList),
-                () -> assertTrue(contactsList.stream()
-                        .map(Contact::getType)
-                        .allMatch(t -> t.equals("Contact"))),
+        assertNotNull(contactsList);
+        assertTrue(contactsList.stream()
+                .map(Contact::getType)
+                .allMatch(t -> t.equals("Contact")));
 
-                () -> assertTrue(contactsList.stream()
-                        .map(Contact::getName)
-                        .allMatch(n -> n.contains("@"))),
-                () -> assertTrue(contactsList.size() == number)
-        );
+        assertTrue(contactsList.stream()
+                .map(Contact::getName)
+                .allMatch(n -> n.contains("@")));
+        assertTrue(contactsList.size() == number);
+    }
+
+    @ParameterizedTest
+    @ValueSource(ints = {0, -5, 1001})
+    void testGetEloquaContactMaxNumbersOfEntriesExceptions(int number) {
+        assertThrows(MismatchedInputException.class, () -> contacts.getEloquaContacts(number));
     }
 
     @ParameterizedTest
@@ -79,25 +84,23 @@ public class ContactsApiTest {
             "id, =, 6153467",
             "id, =, 6153465"
     })
-    void testGetEloquaContactWithFilter(String term, String operator, String value) {
+    void testGetEloquaContactWithFilter(String term, String operator, String value) throws JsonProcessingException {
         List<Contact> contactsList = contacts.getEloquaContacts(term, operator, value);
-        assertAll(
-                () -> assertNotNull(contactsList),
-                () -> assertTrue(contactsList.stream()
-                        .map(Contact::getType)
-                        .allMatch(t -> t.equals("Contact"))),
+        assertNotNull(contactsList);
+        assertTrue(contactsList.stream()
+                .map(Contact::getType)
+                .allMatch(t -> t.equals("Contact")));
 
-                () -> assertTrue(contactsList.stream()
-                        .map(Contact::getName)
-                        .allMatch(n -> n.contains("@"))),
-                () -> assertTrue(contactsList.stream()
-                        .map(Contact::getId)
-                        .allMatch(n -> n.equals(value)))
-        );
+        assertTrue(contactsList.stream()
+                .map(Contact::getName)
+                .allMatch(n -> n.contains("@")));
+        assertTrue(contactsList.stream()
+                .map(Contact::getId)
+                .allMatch(n -> n.equals(value)));
     }
 
     @Test
-    void testGetSingleContact() {
+    void testGetSingleContact() throws JsonProcessingException {
         Contact contact = contacts.getSingleContact(id);
         assertNotNull(contact);
         String expectedId = id;
@@ -113,16 +116,16 @@ public class ContactsApiTest {
 
     @ParameterizedTest
     @CsvSource({
-            "emailAddress, testpif123451@gmail.com",
-            "emailAddress, testingemail15@gmail.com"
+            "emailAddress, testpif1234@gmail.com",
+            "emailAddress, testingemail24@gmail.com"
     })
-    void testCreateEloquaContact(String key, String value) {
-        if(!requestBody.isEmpty()) requestBody.clear();
-        requestBody.put(key,value);
+    void testCreateEloquaContact(String key, String value) throws JsonProcessingException {
+        if (!requestBody.isEmpty()) requestBody.clear();
+        requestBody.put(key, value);
         String actualOutput = contacts.createEloquaContact(requestBody);
         String expectedStatus = "Status: 201\n";
         String actualStatus = actualOutput.substring(0, actualOutput.indexOf("I"));
-        assertEquals(expectedStatus,actualStatus);
+        assertEquals(expectedStatus, actualStatus);
 
         String createdId = actualOutput.substring(actualOutput.lastIndexOf(':') + 1).trim();
         assertNotNull(createdId);
@@ -132,19 +135,19 @@ public class ContactsApiTest {
     }
 
     @Test
-    void testUpdateEloquaContact() {
-        if(!requestBody.isEmpty()) requestBody.clear();
-        requestBody.put("emailAddress","jps+12@gmail.com");
-        requestBody.put("id","6153465");
-        requestBody.put("businessPhone","555-555-5556");
+    void testUpdateEloquaContact() throws JsonProcessingException {
+        if (!requestBody.isEmpty()) requestBody.clear();
+        requestBody.put("emailAddress", "jps+12@gmail.com");
+        requestBody.put("id", "6153465");
+        requestBody.put("businessPhone", "555-555-5556");
         Contact contact = contacts.updateEloquaContact(requestBody, id);
         String expectedBusinessPhone = "555-555-5556";
         String actualBusinessPhone = contact.getBusinessPhone();
         assertEquals(expectedBusinessPhone, actualBusinessPhone);
     }
 
-    @AfterAll
-    static void tearDown() {
+    @AfterEach
+    void tearDown() {
         authorization = null;
         contacts = null;
         requestBody = null;

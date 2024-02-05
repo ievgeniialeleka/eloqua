@@ -1,11 +1,9 @@
 package com.eloqua.api.requests;
 
 import com.eloqua.api.entity.Contact;
-import com.eloqua.api.entity.Element;
-import com.eloqua.api.utils.Helper;
+import com.eloqua.api.utils.HttpRequestsGenerator;
 import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.DeserializationFeature;
-import com.fasterxml.jackson.databind.ObjectMapper;
+import lombok.extern.log4j.Log4j2;
 import org.jetbrains.annotations.NotNull;
 
 import java.io.IOException;
@@ -16,12 +14,14 @@ import java.net.http.HttpResponse;
 import java.util.List;
 import java.util.Map;
 
-import static com.eloqua.api.utils.ProjectLogger.logger;
+import static com.eloqua.api.utils.ResponseParser.parseResponseMultipleRecords;
+import static com.eloqua.api.utils.ResponseParser.parseResponseSingleRecord;
 import static java.net.http.HttpClient.newHttpClient;
 
 /**
  * Used for sending GET, POST and PUT requests to Contacts endpoint in Eloqua, consuming and processing responses.
  */
+@Log4j2
 public class ContactsApi {
 
     /**
@@ -49,7 +49,7 @@ public class ContactsApi {
      * Constructor
      *
      * @param basesUriString String representation of a base URL received in response to Authentication request
-     * @param authToken String representation of authorization token required for creating any requests to Eloqua
+     * @param authToken      String representation of authorization token required for creating any requests to Eloqua
      */
     public ContactsApi(@NotNull final String basesUriString,
                        @NotNull final String authToken) {
@@ -65,21 +65,16 @@ public class ContactsApi {
      *
      * @return List of the Contacts received from Eloqua in response to GET request.
      */
-    public List<Contact> getEloquaContacts() {
+    public List<Contact> getEloquaContacts() throws JsonProcessingException {
         HttpClient client = newHttpClient();
 
-        HttpRequest request = HttpRequest.newBuilder()
-                .GET()
-                .uri(this.fullContactsUri)
-                .header("Content-Type", "application/json")
-                .header("Authorization", "Basic " + this.authToken)
-                .build();
+        HttpRequest request = HttpRequestsGenerator.generateGetRequest(this.fullContactsUri, this.authToken);
 
         HttpResponse<String> response = null;
         try {
             response = client.send(request, HttpResponse.BodyHandlers.ofString());
         } catch (IOException | InterruptedException e) {
-            logger.info(e.getMessage());
+            log.info(e.getMessage());
         }
 
         return parseResponseMultipleRecords(response.body());
@@ -92,23 +87,17 @@ public class ContactsApi {
      *
      * @return List of the Contacts received from Eloqua in response to GET request.
      */
-    public List<Contact> getEloquaContacts(final int maxRows) {
+    public List<Contact> getEloquaContacts(final int maxRows) throws JsonProcessingException {
         HttpClient client = newHttpClient();
 
-        HttpRequest request = HttpRequest.newBuilder()
-                .GET()
-                .uri(URI.create(this.fullContactsUri + "?count=" + maxRows))
-                .header("Content-Type", "application/json")
-                .header("Authorization", "Basic " + this.authToken)
-                .build();
+        HttpRequest request = HttpRequestsGenerator.generateGetRequest(this.fullContactsUri, this.authToken, maxRows);
 
         HttpResponse<String> response = null;
         try {
             response = client.send(request, HttpResponse.BodyHandlers.ofString());
         } catch (IOException | InterruptedException e) {
-            logger.info(e.getMessage());
+            log.info(e.getMessage());
         }
-
         return parseResponseMultipleRecords(response.body());
     }
 
@@ -122,22 +111,16 @@ public class ContactsApi {
      *
      * @return List of the Contacts received from Eloqua in response to GET request.
      */
-    public List<Contact> getEloquaContacts(final String term, final String operator, final String value) {
-        final String filter = term + operator + value;
+    public List<Contact> getEloquaContacts(final String term, final String operator, final String value) throws JsonProcessingException {
         HttpClient client = newHttpClient();
 
-        HttpRequest request = HttpRequest.newBuilder()
-                .GET()
-                .uri(URI.create(this.fullContactsUri + "?search=" + filter))
-                .header("Content-Type", "application/json")
-                .header("Authorization", "Basic " + this.authToken)
-                .build();
+        HttpRequest request = HttpRequestsGenerator.generateGetRequest(this.fullContactsUri, this.authToken, term, operator, value);
 
         HttpResponse<String> response = null;
         try {
             response = client.send(request, HttpResponse.BodyHandlers.ofString());
         } catch (IOException | InterruptedException e) {
-            logger.info(e.getMessage());
+            log.info(e.getMessage());
         }
 
         return parseResponseMultipleRecords(response.body());
@@ -151,23 +134,17 @@ public class ContactsApi {
      *
      * @return Contact object received from Eloqua in response to GET request.
      */
-    public Contact getSingleContact(final String id) {
+    public Contact getSingleContact(final String id) throws JsonProcessingException {
         HttpClient client = newHttpClient();
 
-        HttpRequest request = HttpRequest.newBuilder()
-                .GET()
-                .uri(URI.create(this.singleContactUri + "/" + id))
-                .header("Content-Type", "application/json")
-                .header("Authorization", "Basic " + this.authToken)
-                .build();
+        HttpRequest request = HttpRequestsGenerator.generateGetRequest(this.singleContactUri, this.authToken, id);
 
         HttpResponse<String> response = null;
         try {
             response = client.send(request, HttpResponse.BodyHandlers.ofString());
         } catch (IOException | InterruptedException e) {
-            logger.info(e.getMessage());
+            log.info(e.getMessage());
         }
-
         return parseResponseSingleRecord(response.body());
     }
 
@@ -178,21 +155,16 @@ public class ContactsApi {
      *
      * @return String representation of request status and id of a newly created record.
      */
-    public String createEloquaContact(final Map<String,String> map) {
+    public String createEloquaContact(final Map<String, String> valuesMap) throws JsonProcessingException {
         HttpClient client = newHttpClient();
 
-        HttpRequest request = HttpRequest.newBuilder()
-                .uri(this.singleContactUri)
-                .header("Content-Type", "application/json")
-                .header("Authorization", "Basic " + this.authToken)
-                .POST(HttpRequest.BodyPublishers.ofString(Helper.createPostRequestBody(map)))
-                .build();
+        HttpRequest request = HttpRequestsGenerator.generatePostRequest(this.singleContactUri, this.authToken, valuesMap);
 
         HttpResponse<String> response = null;
         try {
             response = client.send(request, HttpResponse.BodyHandlers.ofString());
         } catch (IOException | InterruptedException e) {
-            logger.info(e.getMessage());
+            log.info(e.getMessage());
         }
         return String.format("Status: %d\nID created: %s", response.statusCode(), parseResponseSingleRecord(response.body()).getId());
     }
@@ -204,54 +176,17 @@ public class ContactsApi {
      *
      * @return Contact object updated by PUT request.
      */
-    public Contact updateEloquaContact(final Map<String,String> map, final String id) {
+    public Contact updateEloquaContact(final Map<String, String> valuesMap, final String id) throws JsonProcessingException {
         HttpClient client = newHttpClient();
 
-        HttpRequest request = HttpRequest.newBuilder()
-                .uri((URI.create(this.singleContactUri + "/" + id)))
-                .header("Content-Type", "application/json")
-                .header("Authorization", "Basic " + this.authToken)
-                .PUT(HttpRequest.BodyPublishers.ofString(Helper.createPostRequestBody(map)))
-                .build();
+        HttpRequest request = HttpRequestsGenerator.generatePutRequest(this.singleContactUri, this.authToken, id, valuesMap);
 
         HttpResponse<String> response = null;
         try {
             response = client.send(request, HttpResponse.BodyHandlers.ofString());
         } catch (IOException | InterruptedException e) {
-            logger.info(e.getMessage());
+            log.info(e.getMessage());
         }
         return parseResponseSingleRecord(response.body());
-    }
-
-    /**
-     * Converts Json response received from Eloqua into the list of Contact objects.
-     *
-     * @return List<Contact>
-     */
-    public List<Contact> parseResponseMultipleRecords(String jsonString) {
-        Element element = null;
-        try {
-            element = new ObjectMapper().readValue(jsonString, Element.class);
-        } catch (JsonProcessingException e) {
-            logger.info(e.getMessage());
-        }
-        return element.getElements();
-    }
-
-    /**
-     * Converts Json response received from Eloqua into a single Contact object.
-     *
-     * @return Contact
-     */
-    public Contact parseResponseSingleRecord(String jsonString) {
-        Contact contact = null;
-        ObjectMapper objectMapper = new ObjectMapper();
-        try {
-            objectMapper.disable(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES);
-            contact = objectMapper.readValue(jsonString, Contact.class);
-        } catch (JsonProcessingException e) {
-            logger.info(e.getMessage());
-        }
-        return contact;
     }
 }

@@ -1,7 +1,10 @@
 package com.eloqua.api.utils;
 
 import lombok.Getter;
+import lombok.Setter;
+import lombok.extern.log4j.Log4j2;
 import org.jetbrains.annotations.NotNull;
+import org.json.JSONException;
 import org.json.JSONObject;
 
 import java.io.IOException;
@@ -10,21 +13,22 @@ import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
 import java.util.Base64;
+import java.util.Optional;
 
 import static java.net.http.HttpClient.newHttpClient;
-import static com.eloqua.api.utils.ProjectLogger.logger;
 
 /**
  * Used for authentication and authorization in Eloqua.
  * Base URL for further requests will be received as a part of the response from Eloqua.
  */
+@Log4j2
 public class Authorization {
     private String siteName;
     private URI loginUri;
     private String userName;
     private String pwd;
 
-    @Getter
+    @Getter @Setter
     private String baseUrl;
 
     /**
@@ -49,24 +53,30 @@ public class Authorization {
     /**
      * Evaluates JSONObject received from Eloqua as a response to authorization request and retrieves base URL from it.
      *
-     * @return boolean: true if authorization was successful, false if it failed
+     * @return boolean: true if authorization was successful, false if it failed.
+     * @throws JSONException if received response is empty or has invalid format.
      */
-    public boolean authorize() {
+    public boolean authorize() throws JSONException {
 
         JSONObject authResponse;
         try {
             authResponse = this.sendRequest();
         } catch (IOException | InterruptedException e) {
-            logger.info(e.getMessage());
+            log.info(e.getMessage());
             return false;
         }
-        String urlResponse = authResponse.getJSONObject("urls")
-                .getJSONObject("apis")
-                .getJSONObject("rest")
-                .getString("standard");
 
-        this.baseUrl = urlResponse.substring(0, urlResponse.indexOf('{'));
+        Optional<String> urlResponse = Optional.ofNullable(authResponse)
+                .map(json -> json.optJSONObject("urls"))
+                .map(urls -> urls.optJSONObject("apis"))
+                .map(apis -> apis.optJSONObject("rest"))
+                .map(rest -> rest.optString("standard"));
 
+        if(urlResponse.isPresent() && !urlResponse.get().isEmpty()) {
+            this.baseUrl = urlResponse.get().substring(0, urlResponse.get().indexOf('{'));
+        } else {
+            throw new JSONException("Unsupported authorization response");
+        }
         return true;
     }
 
